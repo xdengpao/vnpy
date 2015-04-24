@@ -74,7 +74,7 @@ class EventEngine:
         """引擎运行"""
         while self.__active == True:
             try:
-                event = self.__queue.get(block = True, timeout = 10)  # 获取事件的阻塞时间设为1秒
+                event = self.__queue.get(block = True, timeout = 1)  # 获取事件的阻塞时间设为1秒
                 self.__process(event)
             except Empty:
                 pass

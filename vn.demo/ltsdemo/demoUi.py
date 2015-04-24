@@ -1113,7 +1113,7 @@ class AboutWidget(QtGui.QDialog):
 
             图形库：PyQt4 4.11.3 Py2.7-x32
 
-            交易接口：vn.lts
+            交易接口：vn.lts/vn.ctp
 
             事件驱动引擎：vn.event
 
@@ -1159,7 +1159,7 @@ class MainWindow(QtGui.QMainWindow):
         self.accountM = AccountMonitor(self.__eventEngine, self)
         self.positionM = PositionMonitor(self.__eventEngine, self)
         self.tradeM = TradeMonitor(self.__eventEngine, self)
-        self.orderM = OrderMonitor(self.__eventEngine, self)
+        self.orderM = OrderMonitor(self.__eventEngine, self.__mainEngine, self)
         self.marketdataM = MarketDataMonitor(self.__eventEngine, self.__mainEngine, self)
         self.tradingW = TradingWidget(self.__eventEngine, self.__mainEngine, self.orderM, self)
 
