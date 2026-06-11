@@ -7,19 +7,16 @@ description: 当在 vn.py 中构建、回测或优化 CTA（趋势/量化）策�
 
 ## 应用的打包方式
 
-`vnpy/app/<name>/` 下的策略/回测/组合应用都是很薄的"重新导出"垫片。例如
-`vnpy/app/cta_strategy/__init__.py` 仅为：
+VeighNa/vn.py 4.x 中，CTA 相关应用直接从独立包导入，不再依赖核心仓库内
+`vnpy/app/<name>/` 的重新导出垫片。优先使用：
 
 ```python
-import sys
-import vnpy_ctastrategy
-sys.modules[__name__] = vnpy_ctastrategy
+from vnpy_ctastrategy import CtaStrategyApp
+from vnpy_ctabacktester import CtaBacktesterApp
 ```
 
-因此真正的实现位于已安装的 `vnpy_*` 包中（`vnpy_ctastrategy`、`vnpy_ctabacktester`、
-`vnpy_portfoliostrategy`、`vnpy_spreadtrading` ...）。排查策略/回测内部逻辑时，请查看已安装
-的包，而非仓库内的垫片。仓库内的 `vnpy/trader/*` 模块（event、object、constant、optimize）
-是这些应用所依赖的共享基础。
+排查策略/回测内部逻辑时，请查看已安装的 `vnpy_*` 包源码，而非旧 2.x 仓库内的垫片。核心
+`vnpy/trader/*` 模块仍提供 event、object、constant、optimize 等共享基础。
 
 ## 典型工作流
 
@@ -29,7 +26,8 @@ sys.modules[__name__] = vnpy_ctastrategy
 3. **优化**：在搜索空间内对参数寻优（见下文）。
 4. 审阅结果，再通过网关将选定参数部署到实盘。
 
-可运行参考见 `examples/cta_backtesting/` 与 `examples/no_ui/run.py`。
+4.x 可运行参考见 `examples/veighna4/run.py`。旧 `examples/cta_backtesting/` 与
+`examples/no_ui/run.py` 仍属于 2.x 代码树，迁移前不要作为新版验证依据。
 
 ## 优化策略参数
 
@@ -51,7 +49,13 @@ setting.set_target("sharpe_ratio")                # 要最大化的指标
 # key_func(stats_dict) -> float               （提取目标指标）
 if check_optimization_setting(setting):
     bf_results = run_bf_optimization(evaluate_func, setting, key_func)
-    ga_results, logbook = run_ga_optimization(evaluate_func, setting, key_func)
+    ga_results = run_ga_optimization(evaluate_func, setting, key_func)
+    ga_results, logbook = run_ga_optimization(
+        evaluate_func,
+        setting,
+        key_func,
+        return_logbook=True,
+    )
 ```
 
 - `evaluate_func` 封装"用这组参数配置回测 → 运行 → 返回统计"。
@@ -61,9 +65,8 @@ if check_optimization_setting(setting):
 ### 优化器选择
 
 - **`run_bf_optimization`**——穷举网格；用于中小空间且希望得到保证的最优组合时。
-- **`run_ga_optimization`**——遗传算法；用于穷举过慢的大空间。在 `dev-ga` 分支上它增加了动态
-  交叉/变异概率与动态早停，并**额外返回一个 `logbook`** 用于收敛分析。完整内部细节见
-  `ga-optimization` 技能。
+- **`run_ga_optimization`**——遗传算法；用于穷举过慢的大空间。`dev-ga` 的动态交叉/变异概率
+  与动态早停已移植到 4.x。默认返回结果列表；如需收敛记录，传入 `return_logbook=True`。
 
 ## 提示
 

@@ -6,52 +6,48 @@ inclusion: always
 
 ## 语言与运行时
 
-- **Python 3.7** 是受支持的目标版本（见 `setup.py` 的 classifiers 与 GitHub Actions
-  工作流）。请勿使用高于 3.7 的语法/特性。
-- **C++17** 用于 `vnpy/api/*` 下的原生 API 扩展（通过 setuptools `Extension` 构建）。
-  Windows 使用预编译的 `.pyd`（仅限 Python 3.7）；Linux 现场编译扩展；macOS 默认不附带
-  原生扩展。
+- 迁移目标是 **VeighNa/vn.py 4.x**，当前基线版本为 `vnpy==4.4.0`。
+- **Python 3.10+** 是 4.x 支持范围；新环境优先使用 **Python 3.13 64 位**。
+- 核心包使用 `pyproject.toml` + `hatchling` 构建，不再以旧分支的 `setup.py` 为准。
+- C++/柜台 API 扩展大多迁移到独立 `vnpy_*` 包中维护，例如 `vnpy_ctp`。
 
 ## 关键依赖
 
-- **图形界面：** PyQt5（锁定 `5.14.1`）、pyqtgraph、qdarkstyle、QScintilla。
-- **数据/计算：** numpy、pandas、ta-lib、matplotlib、seaborn、plotly。
-- **优化：** `deap`（遗传算法），以及 Python `multiprocessing` / `concurrent.futures`
-  用于并行运行。
-- **持久化：** peewee（ORM）、pymysql、psycopg2（PostgreSQL）、mongoengine、influxdb。
-- **网络/IO：** requests、websocket-client、pyzmq（RPC）、quickfix。
-- **数据源 / 券商 SDK：** rqdatac、futu-api、tigeropen、ibapi，以及 `requirements.txt`
-  中列出的众多 `vnpy_*` 网关/应用包。
+- **图形界面：** PySide6 `6.8.2.1`、pyqtgraph、qdarkstyle。
+- **数据/计算：** numpy 2.x、pandas 2.x、ta-lib 0.6.x、plotly、tqdm。
+- **优化：** `deap`，以及 Python `multiprocessing` / `concurrent.futures`。
+- **日志/网络/IO：** loguru、requests、pyzmq、qrcode。
+- **拆分组件：** CTA、回测、数据库、行情源和网关通过独立包安装，例如
+  `vnpy_ctastrategy`、`vnpy_ctabacktester`、`vnpy_sqlite`、`vnpy_rqdata`、`vnpy_ctp`。
 
-> 注意：大多数网关与应用以**独立的 `vnpy_*` 包**分发（如 `vnpy_ctp`、`vnpy_ctastrategy`）。
-> 仓库内的 `vnpy/app/<name>/__init__.py` 仅通过 `sys.modules` 重新导出已安装的包。
+> 迁移期间不要混用 2.x 仓库内的旧 `vnpy/gateway/*`、`vnpy/app/*`、`vnpy/database/*`
+> 与 4.x 独立包；旧目录会遮蔽或混淆新版组件。
 
 ## 构建 / 安装 / 代码检查命令
 
 ```bash
-# 安装依赖
-pip install -r requirements.txt
+# 创建 4.x 迁移环境
+conda create -n veighna4 python=3.13
+conda activate veighna4
+python -m pip install -U pip setuptools wheel
 
-# 安装 vn.py（在 Linux 上会编译 C++ 扩展）
-pip install .            # 或：python setup.py install
-# 也提供辅助脚本：install.sh / install_osx.sh / install.bat
+# 安装迁移依赖
+python -m pip install -r requirements-veighna4.txt
+python scripts/check_veighna4_env.py
 
-# 代码检查（CI 使用 flake8）。真正的错误硬性失败，其余仅警告：
-flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+# 启动新版最小示例
+python examples/veighna4/run.py
 ```
 
-## 构建环境变量
+## Mac mini M4 注意事项
 
-`setup.py` 通过环境变量控制原生扩展的构建：
+- 原生 arm64 路线优先；不要回退到旧分支的 Python 3.7 + PyQt5 路线。
+- `ta-lib` 可能需要先执行 `brew install ta-lib`。
+- `vnpy_ctp` 如无 macOS wheel，需要从源码本地编译；这要求 GitHub 可访问且本机有编译工具链。
 
-- `VNPY_BUILD_sgit`、`VNPY_BUILD_ksgold`、`VNPY_BUILD_ROHON`——设为 `'1'` 包含、`'0'`
-  排除对应的 C++ 扩展模块。
-- `VNPY_BUILD_PARALLEL`——`'auto'`（使用全部 CPU）、`'no'`，或一个整数表示并行编译的
-  worker 数量。
+## 迁移边界
 
-## 持续集成（CI）
-
-GitHub Actions（`.github/workflows/pythonapp.yml`）在 `windows-latest` + Python 3.7
-上运行：安装依赖（含 TA-Lib/quickfix/ibapi 的 wheel）并执行 flake8。请保持
-`E9,F63,F7,F82`（语法错误、未定义名称）始终为零。
+- 当前仓库已同步到官方 4.4.0 基线，并保留 `.kiro` 与迁移辅助文件。
+- `dev-ga` 的动态 GA 定制已移植到 `vnpy/trader/optimize.py`；默认返回列表，传入
+  `return_logbook=True` 时返回 `(results, logbook)`。
+- 迁移记录见 `docs/migration_veighna_4.md`。

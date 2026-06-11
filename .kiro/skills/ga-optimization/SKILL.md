@@ -5,8 +5,8 @@ description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vn
 
 # 技能：遗传算法优化（vnpy/trader/optimize.py）
 
-这是 `dev-ga` 分支的核心。修改前请先阅读 `vnpy/trader/optimize.py`——其 GA 实现为定制版本，
-与上游 vn.py 不同。
+这是 `dev-ga` 分支的核心定制。当前仓库已同步到 VeighNa/vn.py 4.4.0，动态交叉/变异概率、
+动态早停和可选 `logbook` 返回已移植到 `vnpy/trader/optimize.py`。
 
 ## 公开 API
 
@@ -20,8 +20,8 @@ description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vn
   优化目标。
 - `run_bf_optimization(evaluate_func, setting, key_func, max_workers=None, output=print)`
   → `List[Tuple]`——使用 `ProcessPoolExecutor` 的穷举/网格搜索，结果按 `key_func` 降序排序。
-- `run_ga_optimization(evaluate_func, setting, key_func, max_workers=cpu_count()-1,
-  population_size=50, ngen_size=100, output=print)` → `Tuple[List[Tuple], logbook]`。
+- `run_ga_optimization(..., dynamic_probability=True, dynamic_stop=True, return_logbook=False)`
+  → 默认 `List[Tuple]`；传入 `return_logbook=True` 时返回 `Tuple[List[Tuple], logbook]`。
 
 ### 可调用对象契约
 
@@ -39,8 +39,10 @@ description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vn
    - `mate = tools.cxTwoPoint`，`mutate = mutate_individual`（以 `indpb` 概率重采样基因，
      代码中 `indpb=1`），`select = tools.selTournament(tournsize=2)`。
    - `map = pool.map`，`evaluate = ga_evaluate(cache, evaluate_func, key_func, ...)`。
-4. 运行内嵌的 `GA_accuracy(...)` 驱动函数，随后返回
-   `(sorted(list(cache.values()), reverse=True, key=key_func), logbook)`。
+4. 动态模式运行 `run_dynamic_ga_optimization(...)`，否则回落到 deap
+   `algorithms.eaMuPlusLambda(...)`。
+5. 默认返回 `sorted(list(cache.values()), reverse=True, key=key_func)`；当
+   `return_logbook=True` 时额外返回 `logbook`。
 
 ### `ga_evaluate(cache, evaluate_func, key_func, parameters)`
 
@@ -50,7 +52,7 @@ description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vn
 
 ## dev-ga 定制要点（重点）
 
-内嵌的 `GA_accuracy` 函数实现了定制的进化循环：
+`run_dynamic_ga_optimization` 函数实现定制进化循环：
 
 - **统计 + logbook：** 每代将 fitness 的 `avg/min/max/std` 记入 `tools.Logbook`，并返回给
   调用方用于分析/绘图。
@@ -63,11 +65,11 @@ description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vn
 - **常量：** `k1=0.85, k2=0.5, k3=1.0, k4=0.05`。
 - **精英保留 / 重插入：** 选择 `2 * npop`（其中 `npop = 100`）个后代，执行交叉+变异，对失效
   个体重新评估，再用 `tools.selBest(offspring, npop)` 保留最优。
-- **动态早停**（`dynamic_stop == 1`）：当 `logbook.select('std')[0] <= 1e-10`（种群已收敛）
+- **动态早停**（`dynamic_stop=True`）：当当前代 `std <= 1e-10`（种群已收敛）
   时立即返回，节省运行时间。
 
-模块级的 `cxpb`/`mutpb`/`mu`/`lambda_` 是"速度模式"的初始值；启用动态概率后它们每代会被
-重新计算。
+`cxpb`/`mutpb`/`mu`/`lambda_` 仍保留 4.x 的可配置参数；启用动态概率后，每次交叉/变异会在
+这些初始值基础上动态调整。
 
 ## 何时选择哪种优化器
 
@@ -79,8 +81,8 @@ description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vn
 
 - 保持 `creator.create(...)` 在模块级且幂等——重复创建 `FitnessMax`/`Individual` 会在导入时
   报错。
-- 保持 `run_ga_optimization` 的 `(results, logbook)` 返回元组不变；CTA 回测应用中的调用方
-  依赖它。若改变返回结构，请同步更新所有调用方。
+- 保持 `run_ga_optimization` 默认返回结果列表，避免破坏 4.x 调用方；需要收敛记录时使用
+  `return_logbook=True`。
 - 传入 `Pool` 的对象必须可 pickle（`evaluate_func`/`key_func` 及其闭包）。请保持它们便于在
   顶层使用。
 - 通过 `k1..k4` 常量、`std` 早停阈值，以及 `population_size`/`ngen_size` 来调节动态行为；

@@ -4,32 +4,36 @@ inclusion: always
 
 # 项目结构与架构
 
+## 迁移状态
+
+当前工作区已同步到 VeighNa/vn.py 4.4.0 基线。新增代码或文档时，以
+`pyproject.toml`、`docs/migration_veighna_4.md` 和 `requirements-veighna4.txt` 为准。
+
 ## 仓库布局
+
+4.x 核心包布局：
 
 ```
 vnpy/
-├── event/        # 事件驱动内核：Event、EventEngine（发布/订阅 + 定时器）
-├── trader/       # 交易内核：MainEngine、OMS、数据对象、网关/应用基类、
-│   │             #   常量、优化、UI
-│   ├── engine.py     # MainEngine + LogEngine/OmsEngine/EmailEngine + BaseEngine
-│   ├── gateway.py    # BaseGateway（抽象基类）+ LocalOrderManager
-│   ├── app.py        # BaseApp（抽象基类）
-│   ├── object.py     # @dataclass 数据对象（TickData、OrderData ...）
-│   ├── constant.py   # 枚举（Direction、Offset、Status、Exchange、Interval ...）
-│   ├── event.py      # 事件类型字符串常量（EVENT_TICK、EVENT_ORDER ...）
-│   ├── optimize.py   # 穷举 + 遗传算法优化（dev-ga 重点）
-│   ├── converter.py  # 开平/持仓转换
-│   ├── database.py / rqdata.py / setting.py / utility.py
-│   └── ui/           # Qt 桌面界面（"VN Trader"）
-├── gateway/      # 券商/交易所连接器（ctp、xtp、ib、binance、okex ...）
-├── app/          # 可插拔应用；每个 __init__.py 重新导出已安装的 vnpy_* 包
-├── chart/        # 高性能 K 线图组件
-├── database/     # 可插拔持久化：sqlite、mysql、postgresql、mongodb、influxdb
+├── alpha/        # 4.x 新增 AI/多因子研究与策略模块
+├── chart/        # K 线图组件
+├── event/        # 事件驱动内核
 ├── rpc/          # 跨进程/主机 RPC
-└── api/          # C++ 原生 API 绑定（编译为扩展模块）
-examples/         # 可运行示例（no_ui、回测 notebook、client/server、rpc）
-docs/             # Sphinx 文档（社区版 + 精英版）
+└── trader/       # 交易内核、对象、优化、UI
 ```
+
+网关、应用、数据库和数据服务不再作为核心目录维护，而是通过独立包接入：
+
+```
+vnpy_ctp
+vnpy_ctastrategy
+vnpy_ctabacktester
+vnpy_sqlite
+vnpy_rqdata
+...
+```
+
+旧 2.x 的 `vnpy/gateway`、`vnpy/app`、`vnpy/api`、`vnpy/database` 目录已移除。
 
 ## 事件驱动架构
 
@@ -42,10 +46,8 @@ docs/             # Sphinx 文档（社区版 + 精英版）
   `EVENT_TIMER`（`"eTimer"`）事件。
 - 生产者通过 `event_engine.put(Event(...))` 推送事件。
 
-事件类型常量位于 `vnpy/trader/event.py`：`EVENT_TICK`（`"eTick."`）、`EVENT_TRADE`、
-`EVENT_ORDER`、`EVENT_POSITION`、`EVENT_ACCOUNT`、`EVENT_QUOTE`、`EVENT_CONTRACT`、
-`EVENT_LOG`。注意结尾的 `.`——网关同时推送一个通用事件和一个以 `vt_symbol`/`vt_orderid`
-为后缀的具体事件（如 `EVENT_TICK + tick.vt_symbol`），便于订阅者精确过滤。
+事件类型常量位于 `vnpy/trader/event.py`。网关通常同时推送一个通用事件和一个以
+`vt_symbol`/`vt_orderid` 为后缀的具体事件，便于订阅者精确过滤。
 
 ## 核心数据模型
 
@@ -72,3 +74,18 @@ docs/             # Sphinx 文档（社区版 + 精英版）
 - `add_engine(engine_class)` → 注册一个功能型 `BaseEngine`。
 
 正是这套接线机制让网关、应用与引擎保持解耦，仅通过事件与 OMS 进行通信。
+
+4.x 示例导入方式：
+
+```python
+from vnpy_ctp import CtpGateway
+from vnpy_ctastrategy import CtaStrategyApp
+from vnpy_ctabacktester import CtaBacktesterApp
+```
+
+不要再为新代码使用旧式导入：
+
+```python
+from vnpy.gateway.ctp import CtpGateway
+from vnpy.app.cta_strategy import CtaStrategyApp
+```
