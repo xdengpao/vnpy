@@ -31,9 +31,32 @@ OPTIONAL_PACKAGES = [
     "vnpy_ctp",
 ]
 
+OPTIONAL_CRYPTO_PACKAGES = [
+    "pytz",
+    "websocket",
+    "vnpy.api.rest",
+    "vnpy.api.websocket",
+    "vnpy.gateway.binance",
+    "vnpy.gateway.binances",
+    "vnpy.gateway.bitfinex",
+    "vnpy.gateway.bitmex",
+    "vnpy.gateway.bitstamp",
+    "vnpy.gateway.bybit",
+    "vnpy.gateway.coinbase",
+    "vnpy.gateway.deribit",
+    "vnpy.gateway.gateios",
+    "vnpy.gateway.huobi",
+    "vnpy.gateway.huobif",
+    "vnpy.gateway.huobio",
+    "vnpy.gateway.huobis",
+    "vnpy.gateway.okex",
+    "vnpy.gateway.onetoken",
+]
+
 DIST_NAMES = {
     "talib": "ta-lib",
     "zmq": "pyzmq",
+    "websocket": "websocket-client",
 }
 
 
@@ -77,6 +100,11 @@ def main() -> int:
 
     print("\nOptional VeighNa packages:")
     for module_name in OPTIONAL_PACKAGES:
+        imported, detail = check_import(module_name)
+        print(f"  {module_name}: {'OK' if imported else 'MISSING'} - {detail}")
+
+    print("\nOptional cryptocurrency compatibility APIs:")
+    for module_name in OPTIONAL_CRYPTO_PACKAGES:
         imported, detail = check_import(module_name)
         print(f"  {module_name}: {'OK' if imported else 'MISSING'} - {detail}")
 

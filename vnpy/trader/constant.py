@@ -134,6 +134,18 @@ class Exchange(Enum):
     OTC = "OTC"             # OTC Product (Forex/CFD/Pink Sheet Equity)
     IBKRATS = "IBKRATS"     # Paper Trading Exchange of IB
 
+    # Cryptocurrency
+    BITMEX = "BITMEX"
+    OKEX = "OKEX"
+    HUOBI = "HUOBI"
+    BITFINEX = "BITFINEX"
+    BINANCE = "BINANCE"
+    BYBIT = "BYBIT"
+    COINBASE = "COINBASE"
+    DERIBIT = "DERIBIT"
+    GATEIO = "GATEIO"
+    BITSTAMP = "BITSTAMP"
+
     # Special Function
     LOCAL = "LOCAL"         # For local generated data
     GLOBAL = "GLOBAL"       # For those exchanges not supported yet

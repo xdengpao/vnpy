@@ -9,6 +9,10 @@ description: 当在 vn.py 中实现或修改交易网关（券商/交易所连�
 `MainEngine.add_gateway(...)` 注册。多数生产环境网关位于各自的 `vnpy_*` 包中，但都遵循同一
 契约。请先阅读 `vnpy/trader/gateway.py` 中 `BaseGateway` 的 docstring。
 
+本分支例外保留了旧式虚拟币交易兼容层：`vnpy.api.rest`、`vnpy.api.websocket`，以及
+`vnpy/gateway` 下的虚拟币网关子集。修改这些网关时按兼容维护处理；新增非虚拟币网关仍优先
+采用独立 `vnpy_*` 包。
+
 ## 核心规则（来自 BaseGateway docstring）
 
 - **线程安全：** 所有方法必须线程安全；对象之间不共享可变状态。

@@ -51,6 +51,13 @@ alpha = [
     "torch>=2.6.0",
     "pyarrow>=19.0.1",
 ]
+crypto = [
+    "pytz>=2024.1",
+    "websocket-client>=1.8.0",
+    "vnpy_bybit==2026.6.9",
+    "vnpy_deribit==2.0.1.1",
+    "vnpy_okex==2021.4.21.5",
+]
 dev = [
     "pandas-stubs>=2.2.3.250308",
     "scipy-stubs>=1.16.3.0",

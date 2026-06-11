@@ -3,6 +3,7 @@ General utility functions.
 """
 
 import json
+import logging
 import sys
 from datetime import datetime, time
 from pathlib import Path
@@ -18,6 +19,9 @@ from zoneinfo import ZoneInfo, available_timezones      # noqa
 from .object import BarData, TickData
 from .constant import Exchange, Interval
 from .locale import _
+
+
+LOG_FORMATTER = logging.Formatter("[%(asctime)s] %(message)s")
 
 
 def extract_vt_symbol(vt_symbol: str) -> tuple[str, Exchange]:
@@ -1279,3 +1283,29 @@ def virtual(func: Callable) -> Callable:
     that can be (re)implemented by subclasses.
     """
     return func
+
+
+FILE_HANDLERS: dict[str, logging.FileHandler] = {}
+
+
+def _get_file_logger_handler(filename: str) -> logging.FileHandler:
+    """
+    Return a shared file handler for a filename.
+    """
+    handler: logging.FileHandler | None = FILE_HANDLERS.get(filename)
+    if handler is None:
+        handler = logging.FileHandler(filename)
+        FILE_HANDLERS[filename] = handler
+
+    return handler
+
+
+def get_file_logger(filename: str) -> logging.Logger:
+    """
+    Return a logger that writes records into a file.
+    """
+    logger: logging.Logger = logging.getLogger(filename)
+    handler: logging.FileHandler = _get_file_logger_handler(filename)
+    handler.setFormatter(LOG_FORMATTER)
+    logger.addHandler(handler)
+    return logger

@@ -9,6 +9,14 @@ vnpy_ctabacktester==1.3.0
 vnpy_sqlite==1.1.3
 vnpy_rqdata==3.4.7.8
 
+# Cryptocurrency gateways/API kept for compatibility with the old in-tree
+# vnpy.gateway.* and vnpy.api.* imports.
+pytz>=2024.1
+websocket-client>=1.8.0
+vnpy_bybit==2026.6.9
+vnpy_deribit==2.0.1.1
+vnpy_okex==2021.4.21.5
+
 # CTP is optional here because macOS/Apple Silicon often needs a local source
 # build with a working compiler toolchain instead of a ready-made wheel.
 # Install it separately when the gateway is required:

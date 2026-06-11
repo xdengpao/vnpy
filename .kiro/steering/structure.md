@@ -16,8 +16,10 @@ inclusion: always
 ```
 vnpy/
 ├── alpha/        # 4.x 新增 AI/多因子研究与策略模块
+├── api/          # 兼容保留的 REST/WebSocket API，服务旧虚拟币网关
 ├── chart/        # K 线图组件
 ├── event/        # 事件驱动内核
+├── gateway/      # 兼容保留的虚拟币网关子集
 ├── rpc/          # 跨进程/主机 RPC
 └── trader/       # 交易内核、对象、优化、UI
 ```
@@ -33,7 +35,10 @@ vnpy_rqdata
 ...
 ```
 
-旧 2.x 的 `vnpy/gateway`、`vnpy/app`、`vnpy/api`、`vnpy/database` 目录已移除。
+旧 2.x 的 `vnpy/app`、`vnpy/database` 目录已移除。`vnpy/api` 与 `vnpy/gateway`
+只保留虚拟币交易兼容子集，包括 `rest`、`websocket`、`binance`、`binances`、`bitfinex`、
+`bitmex`、`bitstamp`、`coinbase`、`gateios`、`huobi`、`huobif`、`huobio`、`huobis`、
+`onetoken`，以及转发到独立包的 `bybit`、`deribit`、`okex`。
 
 ## 事件驱动架构
 
@@ -88,4 +93,11 @@ from vnpy_ctabacktester import CtaBacktesterApp
 ```python
 from vnpy.gateway.ctp import CtpGateway
 from vnpy.app.cta_strategy import CtaStrategyApp
+```
+
+虚拟币兼容层是例外，保留旧式导入路径：
+
+```python
+from vnpy.api.websocket import WebsocketClient
+from vnpy.gateway.binance import BinanceGateway
 ```

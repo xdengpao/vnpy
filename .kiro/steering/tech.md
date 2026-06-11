@@ -19,9 +19,13 @@ inclusion: always
 - **日志/网络/IO：** loguru、requests、pyzmq、qrcode。
 - **拆分组件：** CTA、回测、数据库、行情源和网关通过独立包安装，例如
   `vnpy_ctastrategy`、`vnpy_ctabacktester`、`vnpy_sqlite`、`vnpy_rqdata`、`vnpy_ctp`。
+- **虚拟币兼容层：** 本分支保留旧 `vnpy.api.rest`、`vnpy.api.websocket` 和虚拟币网关子集；
+  需要 `pytz`、`websocket-client`，并通过 `vnpy_bybit`、`vnpy_deribit`、`vnpy_okex`
+  继续兼容对应独立包入口。
 
-> 迁移期间不要混用 2.x 仓库内的旧 `vnpy/gateway/*`、`vnpy/app/*`、`vnpy/database/*`
-> 与 4.x 独立包；旧目录会遮蔽或混淆新版组件。
+> 迁移期间不要混用 2.x 仓库内的旧 `vnpy/app/*`、`vnpy/database/*` 与 4.x 独立包。
+> `vnpy/api` 与 `vnpy/gateway` 仅允许保留虚拟币交易兼容子集，其他新增网关优先使用独立
+> `vnpy_*` 包。
 
 ## 构建 / 安装 / 代码检查命令
 
@@ -48,6 +52,7 @@ python examples/veighna4/run.py
 ## 迁移边界
 
 - 当前仓库已同步到官方 4.4.0 基线，并保留 `.kiro` 与迁移辅助文件。
+- 虚拟币交易 API 和网关入口已作为兼容层保留；实盘前需要按交易所当前 API 做联调。
 - `dev-ga` 的动态 GA 定制已移植到 `vnpy/trader/optimize.py`；默认返回列表，传入
   `return_logbook=True` 时返回 `(results, logbook)`。
 - 迁移记录见 `docs/migration_veighna_4.md`。

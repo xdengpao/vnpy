@@ -125,6 +125,16 @@ vnpy.alpha模块的设计理念受到[Qlib](https://github.com/microsoft/qlib)�
 
         * :arrow_up: 直达期货（[da](https://www.github.com/vnpy/vnpy_da)）：海外期货
 
+    * 本分支兼容保留的虚拟币网关/API
+
+        * 旧源码网关入口：`vnpy.gateway.binance`、`vnpy.gateway.binances`、`vnpy.gateway.bitfinex`、`vnpy.gateway.bitmex`、`vnpy.gateway.bitstamp`、`vnpy.gateway.coinbase`、`vnpy.gateway.gateios`、`vnpy.gateway.huobi`、`vnpy.gateway.huobif`、`vnpy.gateway.huobio`、`vnpy.gateway.huobis`、`vnpy.gateway.onetoken`
+
+        * 独立包转发入口：`vnpy.gateway.bybit`、`vnpy.gateway.deribit`、`vnpy.gateway.okex`
+
+        * 底层 API：`vnpy.api.rest`、`vnpy.api.websocket`
+
+        * 以上为从旧分支迁移保留的兼容层，实盘前需按交易所当前 REST/WebSocket 协议逐个复核。
+
     * 特殊应用
 
         * :arrow_up: RQData行情（[rqdata](https://www.github.com/vnpy/vnpy_rqdata)）：跨市场（股票、指数、ETF、期货）实时行情
