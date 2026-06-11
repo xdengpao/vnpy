@@ -1,118 +1,107 @@
-# Requirements — Project Steering & Skills
+# 需求 — 项目 Steering 与 Skills
 
-## Introduction
+## 引言
 
-This spec defines the work to generate **steering files** and **skills** for the
-vn.py (vnpy) quantitative trading framework, based on the `dev-ga` branch.
+本 spec 定义为 vn.py（vnpy）量化交易框架生成 **steering 文件**与 **skills** 的工作，基于
+`dev-ga` 分支。
 
-- **Steering files** (`.kiro/steering/*.md`) provide always-available context about
-  the product, technology stack, project structure, and coding conventions so that
-  every Kiro interaction is grounded in this project's reality.
-- **Skills** (`.kiro/skills/<name>/SKILL.md`) package focused, on-demand workflow
-  guides for recurring development tasks in this codebase.
+- **Steering 文件**（`.kiro/steering/*.md`）提供始终可用的上下文，覆盖产品、技术栈、项目
+  结构与编码约定，使每一次与 Kiro 的交互都根植于本项目的真实情况。
+- **Skills**（`.kiro/skills/<name>/SKILL.md`）为代码库中反复出现的开发任务打包成聚焦的、
+  按需加载的工作流指南。
 
-The `dev-ga` branch's defining characteristic is a heavily customized **genetic
-algorithm (GA) optimizer** in `vnpy/trader/optimize.py` (dynamic crossover/mutation
-probabilities, dynamic early-stopping, multiprocessing, and a `logbook`-returning
-accuracy function). The generated artifacts must capture this accurately.
+`dev-ga` 分支的标志性特征是 `vnpy/trader/optimize.py` 中经过大量定制的**遗传算法（GA）
+优化器**（动态交叉/变异概率、动态早停、多进程，以及返回 `logbook` 的精度函数）。生成的
+内容必须准确刻画这一点。
 
-## Requirements
+## 需求
 
-### Requirement 1 — Product steering
+### 需求 1 — 产品 steering
 
-**User Story:** As a contributor, I want a product overview so that I understand what
-vn.py is, who uses it, and which problems it solves before writing code.
+**用户故事：** 作为贡献者，我希望有一份产品概览，以便在写代码前理解 vn.py 是什么、谁在用、
+解决了哪些问题。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. WHEN a contributor reads the product steering THEN it SHALL describe vn.py as an
-   open-source, Python-based, event-driven quant trading framework.
-2. THE product steering SHALL list the major capability areas: trading core, gateways,
-   apps, charting, databases, and strategy optimization.
-3. THE product steering SHALL note the target users (institutions and professional traders).
+1. 当贡献者阅读产品 steering 时，它应将 vn.py 描述为开源、基于 Python、事件驱动的量化交易
+   框架。
+2. 产品 steering 应列出主要能力模块：交易内核、网关、应用、图表、数据库与策略优化。
+3. 产品 steering 应说明目标用户（机构与专业交易员）。
 
-### Requirement 2 — Technology steering
+### 需求 2 — 技术 steering
 
-**User Story:** As a contributor, I want a tech-stack reference so that I use the
-correct languages, dependencies, and build/lint commands.
+**用户故事：** 作为贡献者，我希望有一份技术栈参考，以便使用正确的语言、依赖与构建/检查命令。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE tech steering SHALL state the Python version (3.7), the C++17 native extensions,
-   and key third-party libraries (PyQt5, numpy, pandas, deap, peewee, ta-lib, etc.).
-2. THE tech steering SHALL document the build, install, and lint (flake8) commands.
-3. THE tech steering SHALL document the environment build flags (e.g. `VNPY_BUILD_*`).
+1. 技术 steering 应说明 Python 版本（3.7）、C++17 原生扩展以及关键第三方库（PyQt5、numpy、
+   pandas、deap、peewee、ta-lib 等）。
+2. 技术 steering 应记录构建、安装与代码检查（flake8）命令。
+3. 技术 steering 应记录构建环境变量（如 `VNPY_BUILD_*`）。
 
-### Requirement 3 — Structure steering
+### 需求 3 — 结构 steering
 
-**User Story:** As a contributor, I want a map of the repository so that I can locate
-modules quickly and follow the established layout.
+**用户故事：** 作为贡献者，我希望有一张仓库地图，以便快速定位模块并遵循既有布局。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE structure steering SHALL describe the `vnpy/` package layout (event, trader,
-   gateway, app, chart, database, rpc, api).
-2. THE structure steering SHALL explain the event-driven architecture and core data
-   objects (`vt_symbol`, `vt_orderid`, dataclass objects, event types).
-3. THE structure steering SHALL explain how gateways and apps plug into `MainEngine`.
+1. 结构 steering 应描述 `vnpy/` 包布局（event、trader、gateway、app、chart、database、
+   rpc、api）。
+2. 结构 steering 应解释事件驱动架构与核心数据对象（`vt_symbol`、`vt_orderid`、dataclass
+   对象、事件类型）。
+3. 结构 steering 应解释网关与应用如何接入 `MainEngine`。
 
-### Requirement 4 — Code-style steering
+### 需求 4 — 代码风格 steering
 
-**User Story:** As a contributor, I want coding conventions so that my changes match
-the project's existing style and pass CI.
+**用户故事：** 作为贡献者，我希望有编码约定，以便我的改动与项目既有风格一致并通过 CI。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE code-style steering SHALL document naming, type-hinting, dataclass, and docstring
-   conventions observed in the codebase.
-2. THE code-style steering SHALL document the commit-message convention (`[Mod]`, `[Add]`, etc.)
-   and PR guidelines (kept small, link the issue).
-3. THE code-style steering SHALL document the flake8 rules that are enforced/ignored.
+1. 代码风格 steering 应记录代码库中观察到的命名、类型标注、dataclass 与 docstring 约定。
+2. 代码风格 steering 应记录提交信息约定（`[Mod]`、`[Add]` 等）与 PR 指南（保持小、关联
+   issue）。
+3. 代码风格 steering 应记录被强制/忽略的 flake8 规则。
 
-### Requirement 5 — GA optimization skill
+### 需求 5 — GA 优化 skill
 
-**User Story:** As a developer, I want a skill that explains and guides changes to the
-genetic algorithm optimizer so that I can safely extend the `dev-ga` work.
+**用户故事：** 作为开发者，我希望有一个 skill 来解释并指导对遗传算法优化器的修改，以便我能安全
+地扩展 `dev-ga` 的工作。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE skill SHALL explain `run_ga_optimization`, `GA_accuracy`, `ga_evaluate`, and the
-   `OptimizationSetting` API.
-2. THE skill SHALL explain the dynamic crossover/mutation probability formulas and the
-   dynamic early-stopping (std threshold) behavior introduced on `dev-ga`.
-3. THE skill SHALL describe how results and the `logbook` are returned and consumed.
+1. 该 skill 应解释 `run_ga_optimization`、`GA_accuracy`、`ga_evaluate` 与
+   `OptimizationSetting` API。
+2. 该 skill 应解释 `dev-ga` 引入的动态交叉/变异概率公式与动态早停（std 阈值）行为。
+3. 该 skill 应描述结果与 `logbook` 如何返回与被使用。
 
-### Requirement 6 — Gateway development skill
+### 需求 6 — 网关开发 skill
 
-**User Story:** As a developer, I want a skill for implementing a trading gateway so that
-new exchange integrations follow `BaseGateway` contracts.
+**用户故事：** 作为开发者，我希望有一个实现交易网关的 skill，以便新的交易所接入遵循
+`BaseGateway` 契约。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE skill SHALL list the abstract methods that must be implemented and the `on_*`
-   callbacks that must be fired.
-2. THE skill SHALL document thread-safety, non-blocking, and copy-on-push requirements.
-3. THE skill SHALL reference `default_setting`, `exchanges`, and `LocalOrderManager`.
+1. 该 skill 应列出必须实现的抽象方法以及必须触发的 `on_*` 回调。
+2. 该 skill 应记录线程安全、非阻塞与推送前复制的要求。
+3. 该 skill 应引用 `default_setting`、`exchanges` 与 `LocalOrderManager`。
 
-### Requirement 7 — CTA strategy & backtesting skill
+### 需求 7 — CTA 策略与回测 skill
 
-**User Story:** As a quant developer, I want a skill for building and optimizing CTA
-strategies so that I can use backtesting plus brute-force/GA optimization correctly.
+**用户故事：** 作为量化开发者，我希望有一个构建与优化 CTA 策略的 skill，以便正确使用回测加
+穷举/GA 优化。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE skill SHALL describe the relationship between vnpy apps (installed as `vnpy_*`
-   packages) and the strategy/backtesting workflow.
-2. THE skill SHALL show how to define `OptimizationSetting` parameters, targets, and
-   `key_func`, and when to choose brute-force vs GA optimization.
+1. 该 skill 应描述 vnpy 应用（以 `vnpy_*` 包安装）与策略/回测工作流之间的关系。
+2. 该 skill 应展示如何定义 `OptimizationSetting` 的参数、目标与 `key_func`，以及何时选择穷举
+   还是 GA 优化。
 
-### Requirement 8 — Repository placement & review
+### 需求 8 — 仓库放置与评审
 
-**User Story:** As the repository owner, I want the artifacts committed in the repo so
-that the team shares them.
+**用户故事：** 作为仓库所有者，我希望产物提交进仓库，以便团队共享。
 
-#### Acceptance Criteria
+#### 验收标准
 
-1. THE artifacts SHALL be created under the repository's `.kiro/` directory.
-2. WHEN generation is complete THEN the work SHALL be pushed to a branch and a PR SHALL
-   be opened for review (never committed directly to `dev-ga`/`master`).
+1. 产物应创建在仓库的 `.kiro/` 目录下。
+2. 当生成完成时，工作应推送到一个分支并开启 PR 以供评审（切勿直接提交到
+   `dev-ga`/`master`）。

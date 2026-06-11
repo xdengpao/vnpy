@@ -2,77 +2,73 @@
 inclusion: always
 ---
 
-# Project Structure & Architecture
+# 项目结构与架构
 
-## Repository layout
+## 仓库布局
 
 ```
 vnpy/
-├── event/        # Event-driven core: Event, EventEngine (publish/subscribe + timer)
-├── trader/       # Trading core: MainEngine, OMS, data objects, gateway/app base,
-│   │             #   constants, optimization, UI
+├── event/        # 事件驱动内核：Event、EventEngine（发布/订阅 + 定时器）
+├── trader/       # 交易内核：MainEngine、OMS、数据对象、网关/应用基类、
+│   │             #   常量、优化、UI
 │   ├── engine.py     # MainEngine + LogEngine/OmsEngine/EmailEngine + BaseEngine
-│   ├── gateway.py    # BaseGateway (abstract) + LocalOrderManager
-│   ├── app.py        # BaseApp (abstract)
-│   ├── object.py     # @dataclass data objects (TickData, OrderData, ...)
-│   ├── constant.py   # Enums (Direction, Offset, Status, Exchange, Interval, ...)
-│   ├── event.py      # Event-type string constants (EVENT_TICK, EVENT_ORDER, ...)
-│   ├── optimize.py   # Brute-force + genetic-algorithm optimization (dev-ga focus)
-│   ├── converter.py  # Offset/position conversion
+│   ├── gateway.py    # BaseGateway（抽象基类）+ LocalOrderManager
+│   ├── app.py        # BaseApp（抽象基类）
+│   ├── object.py     # @dataclass 数据对象（TickData、OrderData ...）
+│   ├── constant.py   # 枚举（Direction、Offset、Status、Exchange、Interval ...）
+│   ├── event.py      # 事件类型字符串常量（EVENT_TICK、EVENT_ORDER ...）
+│   ├── optimize.py   # 穷举 + 遗传算法优化（dev-ga 重点）
+│   ├── converter.py  # 开平/持仓转换
 │   ├── database.py / rqdata.py / setting.py / utility.py
-│   └── ui/           # Qt desktop UI ("VN Trader")
-├── gateway/      # Broker/exchange connectors (ctp, xtp, ib, binance, okex, ...)
-├── app/          # Pluggable apps; each __init__.py re-exports an installed vnpy_* pkg
-├── chart/        # High-performance candlestick charting widgets
-├── database/     # Pluggable persistence: sqlite, mysql, postgresql, mongodb, influxdb
-├── rpc/          # Cross-process/host RPC
-└── api/          # C++ native API bindings (built as extensions)
-examples/         # Runnable demos (no_ui, backtesting notebooks, client/server, rpc)
-docs/             # Sphinx documentation (community + elite)
+│   └── ui/           # Qt 桌面界面（"VN Trader"）
+├── gateway/      # 券商/交易所连接器（ctp、xtp、ib、binance、okex ...）
+├── app/          # 可插拔应用；每个 __init__.py 重新导出已安装的 vnpy_* 包
+├── chart/        # 高性能 K 线图组件
+├── database/     # 可插拔持久化：sqlite、mysql、postgresql、mongodb、influxdb
+├── rpc/          # 跨进程/主机 RPC
+└── api/          # C++ 原生 API 绑定（编译为扩展模块）
+examples/         # 可运行示例（no_ui、回测 notebook、client/server、rpc）
+docs/             # Sphinx 文档（社区版 + 精英版）
 ```
 
-## Event-driven architecture
+## 事件驱动架构
 
-The system is built around `EventEngine` (`vnpy/event/engine.py`):
+系统围绕 `EventEngine`（`vnpy/event/engine.py`）构建：
 
-- An `Event` carries a `type` string and a `data` payload.
-- Handlers register against a specific type via `register(type, handler)` or against
-  **all** events via `register_general(handler)`.
-- A background thread pulls events off a `Queue` and dispatches to handlers; a second
-  thread emits an `EVENT_TIMER` ("eTimer") every `interval` seconds.
-- Producers call `event_engine.put(Event(...))`.
+- 一个 `Event` 携带 `type` 字符串与 `data` 负载。
+- 处理器通过 `register(type, handler)` 注册到指定类型，或通过 `register_general(handler)`
+  注册到**所有**事件。
+- 后台线程从 `Queue` 中取出事件并分发给处理器；另一个线程每隔 `interval` 秒发出一个
+  `EVENT_TIMER`（`"eTimer"`）事件。
+- 生产者通过 `event_engine.put(Event(...))` 推送事件。
 
-Event-type constants live in `vnpy/trader/event.py`: `EVENT_TICK` (`"eTick."`),
-`EVENT_TRADE`, `EVENT_ORDER`, `EVENT_POSITION`, `EVENT_ACCOUNT`, `EVENT_QUOTE`,
-`EVENT_CONTRACT`, `EVENT_LOG`. Note the trailing `.` — gateways push both a generic
-event and a specific one suffixed with the `vt_symbol`/`vt_orderid`
-(e.g. `EVENT_TICK + tick.vt_symbol`) so subscribers can filter precisely.
+事件类型常量位于 `vnpy/trader/event.py`：`EVENT_TICK`（`"eTick."`）、`EVENT_TRADE`、
+`EVENT_ORDER`、`EVENT_POSITION`、`EVENT_ACCOUNT`、`EVENT_QUOTE`、`EVENT_CONTRACT`、
+`EVENT_LOG`。注意结尾的 `.`——网关同时推送一个通用事件和一个以 `vt_symbol`/`vt_orderid`
+为后缀的具体事件（如 `EVENT_TICK + tick.vt_symbol`），便于订阅者精确过滤。
 
-## Core data model
+## 核心数据模型
 
-Data objects in `vnpy/trader/object.py` are `@dataclass`es. All market/account objects
-inherit `BaseData` (carrying `gateway_name`). Composite identifiers are computed in
-`__post_init__`:
+`vnpy/trader/object.py` 中的数据对象都是 `@dataclass`。所有行情/账户对象继承自 `BaseData`
+（携带 `gateway_name`）。复合标识符在 `__post_init__` 中计算：
 
 - `vt_symbol = f"{symbol}.{exchange.value}"`
-- `vt_orderid = f"{gateway_name}.{orderid}"` (likewise `vt_tradeid`, `vt_quoteid`,
-  `vt_accountid`, `vt_positionid`)
+- `vt_orderid = f"{gateway_name}.{orderid}"`（同理还有 `vt_tradeid`、`vt_quoteid`、
+  `vt_accountid`、`vt_positionid`）
 
-Request objects (`SubscribeRequest`, `OrderRequest`, `CancelRequest`, `HistoryRequest`,
-`QuoteRequest`) flow **into** gateways; data objects flow **out** via `on_*` callbacks.
-`OrderRequest.create_order_data(...)` and `OrderData.create_cancel_request()` are the
-canonical conversion helpers.
+请求对象（`SubscribeRequest`、`OrderRequest`、`CancelRequest`、`HistoryRequest`、
+`QuoteRequest`）**流入**网关；数据对象通过 `on_*` 回调**流出**。
+`OrderRequest.create_order_data(...)` 与 `OrderData.create_cancel_request()` 是规范的
+转换辅助方法。
 
-## How components plug into MainEngine
+## 组件如何接入 MainEngine
 
-`MainEngine` (`vnpy/trader/engine.py`) is the core. On construction it owns/starts an
-`EventEngine` and initializes the built-in engines (`LogEngine`, `OmsEngine`,
-`EmailEngine`). Components are added at runtime:
+`MainEngine`（`vnpy/trader/engine.py`）是核心。构造时它会拥有并启动一个 `EventEngine`，
+并初始化内置引擎（`LogEngine`、`OmsEngine`、`EmailEngine`）。组件在运行时动态添加：
 
-- `add_gateway(gateway_class)` → instantiates a `BaseGateway`, registers it by
-  `gateway_name`, and merges its `exchanges`.
-- `add_app(app_class)` → registers a `BaseApp` and adds the app's `engine_class`.
-- `add_engine(engine_class)` → registers a functional `BaseEngine`.
+- `add_gateway(gateway_class)` → 实例化一个 `BaseGateway`，按 `gateway_name` 注册，并合并
+  其 `exchanges`。
+- `add_app(app_class)` → 注册一个 `BaseApp`，并加入该应用的 `engine_class`。
+- `add_engine(engine_class)` → 注册一个功能型 `BaseEngine`。
 
-This wiring is what lets gateways, apps, and engines remain decoupled and communicate
-only through events and the OMS.
+正是这套接线机制让网关、应用与引擎保持解耦，仅通过事件与 OMS 进行通信。

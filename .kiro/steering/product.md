@@ -2,45 +2,39 @@
 inclusion: always
 ---
 
-# Product — vn.py
+# 产品说明 — vn.py
 
-vn.py (package name `vnpy`) is an **open-source, Python-based quantitative trading
-framework**. It was first released in January 2015 and has grown into a full-featured
-platform for developing and running automated trading systems. Performance-sensitive,
-low-level pieces are written in C++ and exposed to Python.
+vn.py（包名 `vnpy`）是一套**开源的、基于 Python 的量化交易框架**。项目于 2015 年 1 月首次
+发布，已发展为完整的自动化交易系统开发与运行平台。对性能敏感的底层模块使用 C++ 编写，并以
+扩展模块的形式暴露给 Python。
 
-Current version: **2.4.0** (see `vnpy/__init__.py`). License: **MIT**.
+当前版本：**2.4.0**（见 `vnpy/__init__.py`）。许可证：**MIT**。
 
-## Who it is for
+## 目标用户
 
-Institutional investors and professional traders — hedge funds, prop trading firms,
-securities/futures asset managers, exchanges, research institutions, and crypto funds.
-The framework targets users who build complex strategies and route orders to many
-markets (equity, futures, options, forex, crypto).
+机构投资者与专业交易员——对冲基金、自营交易公司、券商/期货资管、交易所、研究机构以及数字货币
+基金。框架面向需要构建复杂策略并向多个市场（股票、期货、期权、外汇、数字货币）路由订单的用户。
 
-## Capability areas
+## 能力模块
 
-- **Trading core (`vnpy.trader`)** — the event-driven engine, the order-management
-  system (OMS), shared data objects, and the desktop UI ("VN Trader").
-- **Gateways (`vnpy.gateway`)** — connectors to dozens of brokers/exchanges across
-  Chinese and global markets, plus crypto venues (e.g. CTP, XTP, IB, Binance, OKEX).
-- **Apps (`vnpy.app`)** — pluggable applications such as CTA strategy, CTA backtester,
-  portfolio strategy, spread trading, option master, algo trading, risk manager,
-  data manager/recorder, paper account, script trader, and RPC service.
-- **Charting (`vnpy.chart`)** — high-performance candlestick/k-line charting widgets.
-- **Databases (`vnpy.database`)** — pluggable persistence (SQLite, MySQL, PostgreSQL,
-  MongoDB, InfluxDB).
-- **RPC (`vnpy.rpc`)** — process/host distribution so trading components can run apart.
+- **交易内核（`vnpy.trader`）**——事件驱动引擎、订单管理系统（OMS）、共享数据对象，以及桌面
+  界面（"VN Trader"）。
+- **接口网关（`vnpy.gateway`）**——连接数十家券商/交易所的连接器，覆盖国内外市场及数字货币
+  平台（如 CTP、XTP、IB、Binance、OKEX 等）。
+- **应用模块（`vnpy.app`）**——可插拔应用，如 CTA 策略、CTA 回测、组合策略、价差交易、期权
+  大师、算法交易、风险管理、数据管理/录制、模拟账户、脚本交易、RPC 服务等。
+- **图表（`vnpy.chart`）**——高性能 K 线/蜡烛图绘制组件。
+- **数据库（`vnpy.database`）**——可插拔持久化（SQLite、MySQL、PostgreSQL、MongoDB、
+  InfluxDB）。
+- **RPC（`vnpy.rpc`）**——进程/主机分布式部署，使各交易组件可分离运行。
 
-## Strategy optimization (focus of the `dev-ga` branch)
+## 策略优化（`dev-ga` 分支的重点）
 
-Strategies are tuned with the optimization utilities in `vnpy/trader/optimize.py`:
-brute-force (exhaustive grid) optimization and **genetic-algorithm (GA) optimization**.
-The `dev-ga` branch customizes the GA optimizer with dynamic crossover/mutation
-probabilities and dynamic early-stopping for faster, more robust convergence. See the
-`ga-optimization` skill for details.
+策略通过 `vnpy/trader/optimize.py` 中的优化工具进行调参：穷举（网格）优化与**遗传算法（GA）
+优化**。`dev-ga` 分支对 GA 优化器进行了定制，引入了**动态交叉/变异概率**与**动态早停**，以获得
+更快、更稳健的收敛。详见 `ga-optimization` 技能。
 
-## Key links
+## 关键链接
 
-- Project docs: https://www.vnpy.com/docs/cn/index.html
-- Community forum: https://www.vnpy.com/forum/
+- 项目文档：https://www.vnpy.com/docs/cn/index.html
+- 社区论坛：https://www.vnpy.com/forum/

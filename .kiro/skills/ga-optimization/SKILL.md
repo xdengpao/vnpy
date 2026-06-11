@@ -1,95 +1,89 @@
 ---
 name: ga-optimization
-description: Use when working on strategy parameter optimization in vn.py — especially the genetic algorithm optimizer in vnpy/trader/optimize.py (run_ga_optimization, GA_accuracy, ga_evaluate, OptimizationSetting). Covers the dev-ga branch's dynamic crossover/mutation probabilities and dynamic early-stopping. Trigger on: GA, genetic algorithm, optimize, optimization, deap, cxpb, mutpb, logbook, parameter tuning.
+description: 当处理 vn.py 中的策略参数优化时使用——尤其是 vnpy/trader/optimize.py 中的遗传算法优化器（run_ga_optimization、GA_accuracy、ga_evaluate、OptimizationSetting）。涵盖 dev-ga 分支的动态交叉/变异概率与动态早停。触发关键词：GA、遗传算法、optimize、优化、deap、cxpb、mutpb、logbook、参数调优。
 ---
 
-# Skill: Genetic Algorithm Optimization (vnpy/trader/optimize.py)
+# 技能：遗传算法优化（vnpy/trader/optimize.py）
 
-This is the centerpiece of the `dev-ga` branch. Read `vnpy/trader/optimize.py` before
-editing — the GA implementation is custom and differs from upstream vn.py.
+这是 `dev-ga` 分支的核心。修改前请先阅读 `vnpy/trader/optimize.py`——其 GA 实现为定制版本，
+与上游 vn.py 不同。
 
-## Public API surface
+## 公开 API
 
-- `OptimizationSetting` — declares the parameter search space and the optimization target.
-  - `add_parameter(name, start, end=None, step=None)` — a single value (fixed) when only
-    `start` is given, otherwise an inclusive range `start..end` stepped by `step`.
-    Returns `(ok: bool, message: str)`; validates `start < end` and `step > 0`.
-  - `set_target(target_name)` — name of the metric to maximize.
-  - `generate_settings()` → `List[dict]` — Cartesian product of all parameters.
-- `check_optimization_setting(setting, output=print)` → `bool` — guards against an empty
-  combination space or a missing target.
+- `OptimizationSetting`——声明参数搜索空间与优化目标。
+  - `add_parameter(name, start, end=None, step=None)`——仅给 `start` 时为固定值；否则为
+    闭区间 `start..end`，步长 `step`。返回 `(ok: bool, message: str)`；校验 `start < end`
+    与 `step > 0`。
+  - `set_target(target_name)`——要最大化的指标名称。
+  - `generate_settings()` → `List[dict]`——所有参数的笛卡尔积。
+- `check_optimization_setting(setting, output=print)` → `bool`——防止参数组合为空或未设置
+  优化目标。
 - `run_bf_optimization(evaluate_func, setting, key_func, max_workers=None, output=print)`
-  → `List[Tuple]` — brute-force/exhaustive grid search using a `ProcessPoolExecutor`,
-  results sorted descending by `key_func`.
+  → `List[Tuple]`——使用 `ProcessPoolExecutor` 的穷举/网格搜索，结果按 `key_func` 降序排序。
 - `run_ga_optimization(evaluate_func, setting, key_func, max_workers=cpu_count()-1,
-  population_size=50, ngen_size=100, output=print)` → `Tuple[List[Tuple], logbook]`.
+  population_size=50, ngen_size=100, output=print)` → `Tuple[List[Tuple], logbook]`。
 
-### Callable contracts
+### 可调用对象契约
 
-- `evaluate_func: Callable[[dict], dict]` — runs one backtest for a parameter `dict` and
-  returns a statistics `dict`.
-- `key_func: Callable[[list], float]` — extracts the scalar to maximize from the result.
-  (deap fitness is configured with `weights=(1.0,)`, i.e. **maximization**.)
+- `evaluate_func: Callable[[dict], dict]`——针对一组参数 `dict` 运行一次回测并返回统计 `dict`。
+- `key_func: Callable[[list], float]`——从结果中提取要最大化的标量。
+  （deap 的 fitness 配置为 `weights=(1.0,)`，即**最大化**。）
 
-## How `run_ga_optimization` works
+## `run_ga_optimization` 的工作流程
 
-1. Builds candidate settings as lists of `(name, value)` items from `generate_settings()`.
-2. Sets up a `multiprocessing.Manager().dict()` **cache** (keyed by the parameter tuple)
-   and a `Pool(max_workers)` for parallel evaluation.
-3. Configures a deap `Toolbox`:
-   - `individual` / `population` via `tools.initIterate` / `initRepeat`.
-   - `mate = tools.cxTwoPoint`, `mutate = mutate_individual` (resamples genes with prob
-     `indpb`), `select = tools.selTournament(tournsize=2)`.
-   - `map = pool.map`, `evaluate = ga_evaluate(cache, evaluate_func, key_func, ...)`.
-4. Runs the nested `GA_accuracy(...)` driver, then returns
-   `(sorted(list(cache.values()), reverse, key=key_func), logbook)`.
+1. 由 `generate_settings()` 把候选设置构造为 `(name, value)` 项列表。
+2. 建立 `multiprocessing.Manager().dict()` **缓存**（以参数元组为键）并用 `Pool(max_workers)`
+   进行并行评估。
+3. 配置 deap `Toolbox`：
+   - `individual` / `population` 使用 `tools.initIterate` / `initRepeat`。
+   - `mate = tools.cxTwoPoint`，`mutate = mutate_individual`（以 `indpb` 概率重采样基因，
+     代码中 `indpb=1`），`select = tools.selTournament(tournsize=2)`。
+   - `map = pool.map`，`evaluate = ga_evaluate(cache, evaluate_func, key_func, ...)`。
+4. 运行内嵌的 `GA_accuracy(...)` 驱动函数，随后返回
+   `(sorted(list(cache.values()), reverse=True, key=key_func), logbook)`。
 
 ### `ga_evaluate(cache, evaluate_func, key_func, parameters)`
 
-Memoizes by `tuple(parameters)`: on a cache miss it builds `dict(parameters)`, calls
-`evaluate_func`, stores the **full result dict** in the cache, then returns
-`(key_func(result),)` as the deap fitness tuple. This is why `cache.values()` yields the
-complete result objects at the end.
+以 `tuple(parameters)` 做记忆化：缓存未命中时构造 `dict(parameters)`、调用 `evaluate_func`、
+把**完整结果 dict** 存入缓存，再返回 `(key_func(result),)` 作为 deap 的 fitness 元组。这也是
+最终 `cache.values()` 能产出完整结果对象的原因。
 
-## dev-ga customizations (the important part)
+## dev-ga 定制要点（重点）
 
-The nested `GA_accuracy` function implements the custom evolutionary loop:
+内嵌的 `GA_accuracy` 函数实现了定制的进化循环：
 
-- **Statistics + logbook:** records `avg/min/max/std` of fitness each generation into a
-  `tools.Logbook`, which is returned to the caller for analysis/plotting.
-- **Dynamic crossover probability** (`dynamic_probability == 1`), per mating pair:
-  - if `max_child >= avg`: `cxpb = k1 * (max - max_child) / (max - avg)` (clamped `>= 0`)
-  - else: `cxpb = k3`
-- **Dynamic mutation probability**, per individual:
-  - if `fitness >= avg`: `mutpb = k2 * (max - fitness) / (max - avg)` (clamped `>= 0`)
-  - else: `mutpb = k4`
-- **Constants:** `k1=0.85, k2=0.5, k3=1.0, k4=0.05`.
-- **Elitism / reinsertion:** selects offspring (`2 * npop`, with `npop = 100`), applies
-  crossover+mutation, re-evaluates invalid individuals, keeps the best via
-  `tools.selBest(offspring, npop)`.
-- **Dynamic early-stopping** (`dynamic_stop == 1`): returns as soon as
-  `logbook.select('std')[0] <= 1e-10` (population has converged), saving runtime.
+- **统计 + logbook：** 每代将 fitness 的 `avg/min/max/std` 记入 `tools.Logbook`，并返回给
+  调用方用于分析/绘图。
+- **动态交叉概率**（`dynamic_probability == 1`），逐对配种计算：
+  - 若 `max_child >= avg`：`cxpb = k1 * (max - max_child) / (max - avg)`（下限钳为 `>= 0`）
+  - 否则：`cxpb = k3`
+- **动态变异概率**，逐个体计算：
+  - 若 `fitness >= avg`：`mutpb = k2 * (max - fitness) / (max - avg)`（下限钳为 `>= 0`）
+  - 否则：`mutpb = k4`
+- **常量：** `k1=0.85, k2=0.5, k3=1.0, k4=0.05`。
+- **精英保留 / 重插入：** 选择 `2 * npop`（其中 `npop = 100`）个后代，执行交叉+变异，对失效
+  个体重新评估，再用 `tools.selBest(offspring, npop)` 保留最优。
+- **动态早停**（`dynamic_stop == 1`）：当 `logbook.select('std')[0] <= 1e-10`（种群已收敛）
+  时立即返回，节省运行时间。
 
-The module-level seeds for `cxpb`/`mutpb`/`mu`/`lambda_` are starting values for the
-"speed" mode; with dynamic probability enabled they are recomputed each generation.
+模块级的 `cxpb`/`mutpb`/`mu`/`lambda_` 是"速度模式"的初始值；启用动态概率后它们每代会被
+重新计算。
 
-## When to use which optimizer
+## 何时选择哪种优化器
 
-- **Brute force (`run_bf_optimization`)** — small/medium search spaces where you want the
-  guaranteed global best across the grid.
-- **Genetic algorithm (`run_ga_optimization`)** — large spaces where exhaustive search is
-  too expensive; trades completeness for speed. The dynamic probabilities + early-stop
-  improve convergence quality/robustness at some time cost.
+- **穷举（`run_bf_optimization`）**——中小搜索空间，需要在网格内得到保证的全局最优时使用。
+- **遗传算法（`run_ga_optimization`）**——大搜索空间、穷举过慢时使用；用完整性换取速度。动态
+  概率 + 早停在一定时间成本下提升收敛质量与鲁棒性。
 
-## Guidance for safe changes
+## 安全修改指南
 
-- Keep the deap `creator.create(...)` calls module-level and idempotent — re-creating
-  `FitnessMax`/`Individual` raises at import if duplicated.
-- Preserve the `(results, logbook)` return tuple of `run_ga_optimization`; callers in the
-  CTA backtester app depend on it. If you change the return shape, update all callers.
-- Anything passed to the `Pool` must be picklable (the `evaluate_func`/`key_func` and
-  their closures). Keep them top-level-friendly.
-- Tune dynamic behavior via the `k1..k4` constants, the `std` early-stop threshold, and
-  `population_size`/`ngen_size` — document any change in the commit (`[Mod]` prefix).
-- After edits, smoke-test by importing the module and running a tiny optimization with a
-  trivial `evaluate_func`/`key_func` to confirm it converges and returns a logbook.
+- 保持 `creator.create(...)` 在模块级且幂等——重复创建 `FitnessMax`/`Individual` 会在导入时
+  报错。
+- 保持 `run_ga_optimization` 的 `(results, logbook)` 返回元组不变；CTA 回测应用中的调用方
+  依赖它。若改变返回结构，请同步更新所有调用方。
+- 传入 `Pool` 的对象必须可 pickle（`evaluate_func`/`key_func` 及其闭包）。请保持它们便于在
+  顶层使用。
+- 通过 `k1..k4` 常量、`std` 早停阈值，以及 `population_size`/`ngen_size` 来调节动态行为；
+  任何改动请在提交说明中记录（`[Mod]` 前缀）。
+- 修改后请做冒烟测试：导入该模块，用平凡的 `evaluate_func`/`key_func` 跑一次极小规模优化，
+  确认能收敛并返回 logbook。
