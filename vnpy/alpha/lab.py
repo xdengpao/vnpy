@@ -27,6 +27,7 @@ class AlphaLab:
 
         self.daily_path: Path = self.lab_path.joinpath("daily")
         self.minute_path: Path = self.lab_path.joinpath("minute")
+        self.hour_path: Path = self.lab_path.joinpath("hour")
         self.component_path: Path = self.lab_path.joinpath("component")
 
         self.dataset_path: Path = self.lab_path.joinpath("dataset")
@@ -40,6 +41,7 @@ class AlphaLab:
             self.lab_path,
             self.daily_path,
             self.minute_path,
+            self.hour_path,
             self.component_path,
             self.dataset_path,
             self.model_path,
@@ -60,6 +62,8 @@ class AlphaLab:
             file_path: Path = self.daily_path.joinpath(f"{bar.vt_symbol}.parquet")
         elif bar.interval == Interval.MINUTE:
             file_path = self.minute_path.joinpath(f"{bar.vt_symbol}.parquet")
+        elif bar.interval == Interval.HOUR:
+            file_path = self.hour_path.joinpath(f"{bar.vt_symbol}.parquet")
         elif bar.interval:
             logger.error(f"Unsupported interval {bar.interval.value}")
             return
@@ -78,15 +82,28 @@ class AlphaLab:
             }
             data.append(bar_data)
 
-        new_df: pl.DataFrame = pl.DataFrame(data)
+        numeric_columns: list[str] = [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "turnover",
+            "open_interest",
+        ]
+        new_df: pl.DataFrame = pl.DataFrame(data).with_columns(
+            [pl.col(column).cast(pl.Float64) for column in numeric_columns]
+        )
 
         # If file exists, read and merge
         if file_path.exists():
-            old_df: pl.DataFrame = pl.read_parquet(file_path)
+            old_df: pl.DataFrame = pl.read_parquet(file_path).with_columns(
+                [pl.col(column).cast(pl.Float64) for column in numeric_columns]
+            )
 
             new_df = pl.concat([old_df, new_df])
 
-            new_df = new_df.unique(subset=["datetime"])
+            new_df = new_df.unique(subset=["datetime"], keep="last")
 
             new_df = new_df.sort("datetime")
 
@@ -113,6 +130,8 @@ class AlphaLab:
             folder_path: Path = self.daily_path
         elif interval == Interval.MINUTE:
             folder_path = self.minute_path
+        elif interval == Interval.HOUR:
+            folder_path = self.hour_path
         else:
             logger.error(f"Unsupported interval {interval.value}")
             return []
@@ -177,6 +196,8 @@ class AlphaLab:
             folder_path: Path = self.daily_path
         elif interval == Interval.MINUTE:
             folder_path = self.minute_path
+        elif interval == Interval.HOUR:
+            folder_path = self.hour_path
         else:
             logger.error(f"Unsupported interval {interval.value}")
             return None

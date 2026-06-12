@@ -72,6 +72,9 @@ dev = [
 "Source" = "https://github.com/vnpy/vnpy/"
 "Forum" = "https://www.vnpy.com/forum"
 
+[project.scripts]
+vnpym = "vnpy.vnpym.cli:main"
+
 [build-system]
 requires = ["hatchling>=1.27.0", "babel>=2.17.0"]
 build-backend = "hatchling.build"
@@ -125,6 +128,7 @@ warn_no_return = true
 module = [
     "polars",
     "lightgbm",
+    "sklearn.*",
     "hatchling.*",
     "qrcode"
 ]
