@@ -1022,7 +1022,7 @@ def _split_url(url):
     将url拆分为host和path
     :return: host, path
     """
-    result = re.match("\w+://([^/]*)(.*)", url)  # noqa
+    result = re.match(r"\w+://([^/]*)(.*)", url)  # noqa
     if result:
         return result.group(1), result.group(2)
 

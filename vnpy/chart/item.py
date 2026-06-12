@@ -1,7 +1,6 @@
 from abc import abstractmethod
-from typing import List, Dict, Tuple
 
-import pyqtgraph as pg
+import pyqtgraph as pg      # type: ignore
 
 from vnpy.trader.ui import QtCore, QtGui, QtWidgets
 from vnpy.trader.object import BarData
@@ -13,14 +12,14 @@ from .manager import BarManager
 class ChartItem(pg.GraphicsObject):
     """"""
 
-    def __init__(self, manager: BarManager):
+    def __init__(self, manager: BarManager) -> None:
         """"""
         super().__init__()
 
         self._manager: BarManager = manager
 
-        self._bar_picutures: Dict[int, QtGui.QPicture] = {}
-        self._item_picuture: QtGui.QPicture = None
+        self._bar_picutures: dict[int, QtGui.QPicture | None] = {}
+        self._item_picuture: QtGui.QPicture | None = None
 
         self._black_brush: QtGui.QBrush = pg.mkBrush(color=BLACK_COLOR)
 
@@ -34,10 +33,13 @@ class ChartItem(pg.GraphicsObject):
         )
         self._down_brush: QtGui.QBrush = pg.mkBrush(color=DOWN_COLOR)
 
-        self._rect_area: Tuple[float, float] = None
+        self._rect_area: tuple[float, float] | None = None
 
         # Very important! Only redraw the visible part and improve speed a lot.
-        self.setFlag(self.ItemUsesExtendedStyleOption)
+        self.setFlag(self.GraphicsItemFlag.ItemUsesExtendedStyleOption)
+
+        # Force update during the next paint
+        self._to_update: bool = False
 
     @abstractmethod
     def _draw_bar_picture(self, ix: int, bar: BarData) -> QtGui.QPicture:
@@ -54,7 +56,7 @@ class ChartItem(pg.GraphicsObject):
         pass
 
     @abstractmethod
-    def get_y_range(self, min_ix: int = None, max_ix: int = None) -> Tuple[float, float]:
+    def get_y_range(self, min_ix: int | None = None, max_ix: int | None = None) -> tuple[float, float]:
         """
         Get range of y-axis with given x-axis range.
 
@@ -69,23 +71,26 @@ class ChartItem(pg.GraphicsObject):
         """
         pass
 
-    def update_history(self, history: List[BarData]) -> BarData:
+    def update_history(self, history: list[BarData]) -> None:
         """
         Update a list of bar data.
         """
         self._bar_picutures.clear()
 
-        bars = self._manager.get_all_bars()
-        for ix, bar in enumerate(bars):
+        bars: list[BarData] = self._manager.get_all_bars()
+
+        for ix, _ in enumerate(bars):
             self._bar_picutures[ix] = None
 
         self.update()
 
-    def update_bar(self, bar: BarData) -> BarData:
+    def update_bar(self, bar: BarData) -> None:
         """
         Update single bar data.
         """
-        ix = self._manager.get_index(bar.datetime)
+        ix: int | None = self._manager.get_index(bar.datetime)
+        if ix is None:
+            return
 
         self._bar_picutures[ix] = None
 
@@ -96,6 +101,7 @@ class ChartItem(pg.GraphicsObject):
         Refresh the item.
         """
         if self.scene():
+            self._to_update = True
             self.scene().update()
 
     def paint(
@@ -103,37 +109,46 @@ class ChartItem(pg.GraphicsObject):
         painter: QtGui.QPainter,
         opt: QtWidgets.QStyleOptionGraphicsItem,
         w: QtWidgets.QWidget
-    ):
+    ) -> None:
         """
         Reimplement the paint method of parent class.
 
         This function is called by external QGraphicsView.
         """
-        rect = opt.exposedRect
+        rect: QtCore.QRectF = opt.exposedRect       # type: ignore
 
-        min_ix = int(rect.left())
-        max_ix = int(rect.right())
+        min_ix: int = int(rect.left())
+        max_ix: int = int(rect.right())
         max_ix = min(max_ix, len(self._bar_picutures))
 
-        rect_area = (min_ix, max_ix)
-        if rect_area != self._rect_area or not self._item_picuture:
+        rect_area: tuple = (min_ix, max_ix)
+        if (
+            self._to_update
+            or rect_area != self._rect_area
+            or not self._item_picuture
+        ):
+            self._to_update = False
             self._rect_area = rect_area
             self._draw_item_picture(min_ix, max_ix)
 
-        self._item_picuture.play(painter)
+        if self._item_picuture:
+            self._item_picuture.play(painter)
 
     def _draw_item_picture(self, min_ix: int, max_ix: int) -> None:
         """
         Draw the picture of item in specific range.
         """
         self._item_picuture = QtGui.QPicture()
-        painter = QtGui.QPainter(self._item_picuture)
+        painter: QtGui.QPainter = QtGui.QPainter(self._item_picuture)
 
         for ix in range(min_ix, max_ix):
-            bar_picture = self._bar_picutures[ix]
+            bar_picture: QtGui.QPicture | None = self._bar_picutures[ix]
 
             if bar_picture is None:
-                bar = self._manager.get_bar(ix)
+                bar: BarData | None = self._manager.get_bar(ix)
+                if bar is None:
+                    continue
+
                 bar_picture = self._draw_bar_picture(ix, bar)
                 self._bar_picutures[ix] = bar_picture
 
@@ -153,15 +168,15 @@ class ChartItem(pg.GraphicsObject):
 class CandleItem(ChartItem):
     """"""
 
-    def __init__(self, manager: BarManager):
+    def __init__(self, manager: BarManager) -> None:
         """"""
         super().__init__(manager)
 
     def _draw_bar_picture(self, ix: int, bar: BarData) -> QtGui.QPicture:
         """"""
         # Create objects
-        candle_picture = QtGui.QPicture()
-        painter = QtGui.QPainter(candle_picture)
+        candle_picture: QtGui.QPicture = QtGui.QPicture()
+        painter: QtGui.QPainter = QtGui.QPainter(candle_picture)
 
         # Set painter color
         if bar.close_price >= bar.open_price:
@@ -185,7 +200,7 @@ class CandleItem(ChartItem):
                 QtCore.QPointF(ix + BAR_WIDTH, bar.open_price),
             )
         else:
-            rect = QtCore.QRectF(
+            rect: QtCore.QRectF = QtCore.QRectF(
                 ix - BAR_WIDTH,
                 bar.open_price,
                 BAR_WIDTH * 2,
@@ -200,7 +215,7 @@ class CandleItem(ChartItem):
     def boundingRect(self) -> QtCore.QRectF:
         """"""
         min_price, max_price = self._manager.get_price_range()
-        rect = QtCore.QRectF(
+        rect: QtCore.QRectF = QtCore.QRectF(
             0,
             min_price,
             len(self._bar_picutures),
@@ -208,7 +223,7 @@ class CandleItem(ChartItem):
         )
         return rect
 
-    def get_y_range(self, min_ix: int = None, max_ix: int = None) -> Tuple[float, float]:
+    def get_y_range(self, min_ix: int | None = None, max_ix: int | None = None) -> tuple[float, float]:
         """
         Get range of y-axis with given x-axis range.
 
@@ -221,10 +236,10 @@ class CandleItem(ChartItem):
         """
         Get information text to show by cursor.
         """
-        bar = self._manager.get_bar(ix)
+        bar: BarData | None = self._manager.get_bar(ix)
 
         if bar:
-            words = [
+            words: list = [
                 "Date",
                 bar.datetime.strftime("%Y-%m-%d"),
                 "",
@@ -243,7 +258,7 @@ class CandleItem(ChartItem):
                 "Close",
                 str(bar.close_price)
             ]
-            text = "\n".join(words)
+            text: str = "\n".join(words)
         else:
             text = ""
 
@@ -253,15 +268,15 @@ class CandleItem(ChartItem):
 class VolumeItem(ChartItem):
     """"""
 
-    def __init__(self, manager: BarManager):
+    def __init__(self, manager: BarManager) -> None:
         """"""
         super().__init__(manager)
 
     def _draw_bar_picture(self, ix: int, bar: BarData) -> QtGui.QPicture:
         """"""
         # Create objects
-        volume_picture = QtGui.QPicture()
-        painter = QtGui.QPainter(volume_picture)
+        volume_picture: QtGui.QPicture = QtGui.QPicture()
+        painter: QtGui.QPainter = QtGui.QPainter(volume_picture)
 
         # Set painter color
         if bar.close_price >= bar.open_price:
@@ -272,7 +287,7 @@ class VolumeItem(ChartItem):
             painter.setBrush(self._down_brush)
 
         # Draw volume body
-        rect = QtCore.QRectF(
+        rect: QtCore.QRectF = QtCore.QRectF(
             ix - BAR_WIDTH,
             0,
             BAR_WIDTH * 2,
@@ -287,7 +302,7 @@ class VolumeItem(ChartItem):
     def boundingRect(self) -> QtCore.QRectF:
         """"""
         min_volume, max_volume = self._manager.get_volume_range()
-        rect = QtCore.QRectF(
+        rect: QtCore.QRectF = QtCore.QRectF(
             0,
             min_volume,
             len(self._bar_picutures),
@@ -295,7 +310,7 @@ class VolumeItem(ChartItem):
         )
         return rect
 
-    def get_y_range(self, min_ix: int = None, max_ix: int = None) -> Tuple[float, float]:
+    def get_y_range(self, min_ix: int | None = None, max_ix: int | None = None) -> tuple[float, float]:
         """
         Get range of y-axis with given x-axis range.
 
@@ -308,10 +323,10 @@ class VolumeItem(ChartItem):
         """
         Get information text to show by cursor.
         """
-        bar = self._manager.get_bar(ix)
+        bar: BarData | None = self._manager.get_bar(ix)
 
         if bar:
-            text = f"Volume {bar.volume}"
+            text: str = f"Volume {bar.volume}"
         else:
             text = ""
 

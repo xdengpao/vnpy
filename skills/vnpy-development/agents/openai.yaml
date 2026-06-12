@@ -1,0 +1,4 @@
+interface:
+  display_name: "vn.py Development"
+  short_description: "Develop and maintain VeighNa/vn.py safely."
+  default_prompt: "Use $vnpy-development to change vn.py core, gateways, CTA workflows, GA optimization, docs, tests, or migration files."
